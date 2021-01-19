@@ -70,10 +70,15 @@ import ModalContinueComponent from "@/components/ModalContinueComponent";
 import ModalGameOverComponent from "@/components/ModalGameOverComponent";
 import VueCookies from "vue-cookies"
 
+// There is lots of methods and computed properties.
+// You can easily extract those to some js module and just import it here.
+// Currently your logic is tightly coupled with vue component and it creates lots of mess.
+// However, it can be challanging to create proper reactivity.
 export default {
     name: 'App',
 
     components: {
+        // Use shorter syntax and don't duplicate those names
         CardComponent: CardComponent,
         ButtonsComponent: ButtonsComponent,
         ResultsComponent: ResultsComponent,
@@ -108,6 +113,8 @@ export default {
 
     computed: {
         cardsAreEqual() {
+            // It looks like you need a class
+            // First question on my mind is why it can be just `return stack.areLastTwoEqual()`
             const stack = this.getCardsStack()
             const card = stack[stack.length - 1]
             const oldCard = stack[stack.length - 2]
@@ -115,8 +122,21 @@ export default {
             return oldCard && card.value === oldCard.value
         },
         hasLucky() {
+            // The same as above. Also you're using here 2 as a number and there was places with `minCard` where you use it as a string.
+            // question remain the same why it can't be:
+            // const card = stack.getLast();
+            // return card.isLucky([2, 'ACE']);
             const stack = this.getCardsStack()
             const card = stack[stack.length - 1]
+            // 'ACE' might be extract to some constat to have handling them. Generally I would create a const for all cards:
+            // const CARDS = {
+            //   C2: '2',
+            //   C3: '3',
+            //   ...
+            //   ACE: 'ACE'   
+            // };
+            // and use it here as [ CARDS.C2, CARDS.ACE ]
+            // or if you don't want to prefix them [ CARDS[2], CARDS.ACE ]
             const luckyIndex = [2, 'ACE']
             
             if (card) {
@@ -129,10 +149,13 @@ export default {
         showScores() {
             if (this.gameRound === 0 && this.winner === null){
                 return false
+            // if you return in the first if, then why you need else here?
             } else if (this.answer && this.gameRound > 0 || this.winner === null && this.gameRound > 0) {
                 return true
             }
 
+            // how about just simple return instead of all those if-els'es:
+            // return this.gameRound > 0 && (this.answer || !this.winner);
             return false
         },
         modalGameOver() {
@@ -140,6 +163,8 @@ export default {
         }
     },
 
+    // why you use different syntax here? not just:
+    // created() {},
     created: function () {
         this.createDeck()
         this.modalContinue = this.isCookies()
@@ -152,6 +177,9 @@ export default {
 
     methods: {
         createDeck() {
+            // why you have 2 empty objects here?
+            // can't you iterate those cards based on 0 index and just adapt index to proper valu on some sort of mapping?
+            // like card 9 -> CARDS.JACK card 2 -> CARDS.C4, etc.
             const deck = [{}, {}]
             for (let i = 2; i < 11; i++) {
                 deck.push(i)
@@ -161,6 +189,10 @@ export default {
             this.deck = deck
         },
         getData() {
+            // it looks liek cantdidate fo a separate module.
+            // import { getCard } from my-lovely-module;
+            // const card = await getCard();
+            // params probably should be hiodden in such module.
             const param = {
                 url: 'https://deckofcardsapi.com/api/deck/new/draw/?count=1',
                 method: 'GET',
@@ -172,6 +204,7 @@ export default {
                     const card = this.createCard(response)
                     this.addToCardsStack(card)
 
+                    // This method call getData however it looks it made much more. It also evaluates results
                     if (this.getAnswer()) {
                         this.roundResult()
                     }
@@ -189,7 +222,14 @@ export default {
             this.setAnswer(lastItem.answer)
             this.setWinner(lastItem.winner)
         },
-
+        // this space before parenthesis is weired.
+        // this is also not intuitive for me, logic as follows is much more clear from my perspective.
+        // if (this.cardsAreEqual) {
+        //   return;
+        // }
+        // this.addGameRound();
+        // this.makeWinner();
+        // etc.
         roundResult () {
             if (!this.cardsAreEqual) {
                 this.addGameRound()
@@ -199,6 +239,7 @@ export default {
             }
         },
 
+        // All those history you would liek to extract from here and have some modul for them.
         setHistory() {
             this.history.push({
                 gameRound: this.getGameRound(),
@@ -208,6 +249,7 @@ export default {
                 answer: this.getAnswer()
             })
         },
+        // you re-create it each time? why? can't you just use previous value? Using cookies seems to be wired.
         getHistory() {
             const history = this.getCookies()
             return JSON.parse(history)
@@ -245,13 +287,27 @@ export default {
                     break
             }
         },
+        // why your using setWinner for such things? isn't exactly what vue does for you when you make this.winner = 'something'?
         setWinner(winner) {
             this.winner = winner
         },
+        // why your using getWinner here? it looks like redundant thing to what vue does
         getWinner() {
             return this.winner
         },
 
+        // another set of methods which just replaces
+        // this.gameRound = value
+        // into
+        // this.setGameRound(value)
+        // or 
+        // this.game
+        // into
+        // this.getGameRound()
+        // or
+        // this.game += 1
+        // into
+        // this.addGameRound()
         addGameRound() {
             this.gameRound++
         },
@@ -261,7 +317,7 @@ export default {
         getGameRound() {
             return this.gameRound
         },
-
+        // why you process response here? it look out of it's scope
         createCard(response) {
             this.card = {
                 image: response.data.cards[0].image,
@@ -270,6 +326,7 @@ export default {
 
             return this.card
         },
+        // Same story as with game
         setCard(card) {
             this.card = card
         },
@@ -282,16 +339,19 @@ export default {
         getOldCard() {
             return this.oldCard
         },
+        // there is also array method .findIndex
+        // this cardValue is also wired, if youw ould base on soem indexes with mapping this probably could be much simpler
         getCardIndex(card) {
             const cardValue = isNaN(card.value) ? card.value : parseInt(card.value)
             const cardObj = this.deck.find(myCard => myCard === cardValue)
             
             return this.deck.indexOf(cardObj)
         },
+        // same story with thosie setters/gettes
         setCardIsLoaded(loaded) {
             this.cardIsLoaded = loaded
         },
-
+        // this coul have sense if you would have soem external state to modify. However, here everything is avaialble in `this`
         addToCardsStack(card) {
             this.cardsStack.push(card)
         },

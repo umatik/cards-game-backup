@@ -12,8 +12,14 @@ export default {
     props: ['history'],
     computed: {
         round() {
+            // this is overcomplicated
+            // if (this.history) {
+            //    return this.history.length - 1   
+            // }
+            // return 0;
             let round = 0
             if (this.history) {
+                // why you not return valu here, like with `isWinenr` but assign it?
                 round = this.history.length - 1
             }
 
@@ -29,6 +35,7 @@ export default {
         },
     },
     methods: {
+        // this can be a comnputed property, currentItem or sth like that
         getHistoryItem() {
             return this.history[this.history.length - 1]
         }

@@ -7,6 +7,7 @@
         <h4 class="pt-3">Do you want to continue the game?</h4>
 
         <template #modal-footer="">
+            <!-- how about `@click="$emit('continue-game', true)"` ? and you could remove methods at all? -->
             <b-button variant="success" @click="giveAnswer(true)">
                 Yes
             </b-button>

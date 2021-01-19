@@ -20,6 +20,7 @@ export default {
 
     computed: {
         myPoints: function () {
+            // Same case as in other file. You can use reduce.
             let points = 0
             this.history.forEach((item) => {
                 if (item.winner) {

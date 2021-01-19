@@ -9,6 +9,7 @@
 
 export default {
     name: 'CardComponent',
+    // I would just pass the cardSrc here in props
     props: ['card'],
     computed: {
         cardIsLoaded() {
